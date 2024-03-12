@@ -1,0 +1,20 @@
+[package]
+name = "scrabble"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+crossterm = {version = "0.27.0", features = ["event-stream"]}
+futures = "0.3.30"
+futures-timer = "3.0.3"
+log = "0.4.21"
+serde = {version = "1.0.197", features = ["derive"]}
+serde_json = "1.0.114"
+tokio = {version = "1.36.0", features = ["full"]}
+
+[[bin]]
+name = "server"
+path = "./src/gameserver/bin/server.rs"
+
