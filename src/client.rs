@@ -1,3 +1,4 @@
+use log::{debug, info};
 use tokio::{io::AsyncWriteExt, net::TcpStream};
 // use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers}; 
 use crate::constants::global::{ClientEvent, KeyPress, KeyboardEvent, PORT};
@@ -15,9 +16,10 @@ pub async fn client_work(client: &mut TcpStream)
         // Use the keypresses to stream the data. 
         if let Some(ce) = keypresses().await
         {
-            println!("In client work loop {:?}", ce);
-            // let val = serde_json::to_string(&ce).expect("Failed to serialize");
-            // let _ = client.write_all(val.as_bytes()).await;
+            let val = serde_json::to_string(&ce).expect("Failed to serialize");
+            debug!("{}", val);
+            let _ = client.write_all(val.trim().as_bytes()).await;
+            info!("Val sent");
         }
         let _ = client.flush().await;
     }

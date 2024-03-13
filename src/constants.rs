@@ -78,6 +78,9 @@ pub mod global {
                             }
                         }, 
                         _ = delay => {
+                            // panic here for some reason. 
+                            // maybe because I was pushing this too quick . 
+                            // understand the select macro a bit better. 
                             ltx.send(KeyPress::Tick).unwrap();
                         },
                     }
