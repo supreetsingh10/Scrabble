@@ -8,7 +8,8 @@ use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifi
 use futures::{FutureExt, StreamExt};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone, Copy)]
 pub enum MOVEMENT {
     UP, 
     DOWN,
@@ -16,12 +17,11 @@ pub enum MOVEMENT {
     LEFT
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone, Copy)]
 pub enum Action {
     DIRECTION(MOVEMENT),
     QUIT,
     WRITE,
-    DELETE,
     NONE,
 }
 
@@ -41,7 +41,10 @@ pub struct KeyboardEvent {
 
 
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+/// TODO
+// This will need elements such as Tile, which will have the information related to the value
+// added. 
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone, Copy)]
 pub struct ClientEvent {
     pub action: Action,
 }

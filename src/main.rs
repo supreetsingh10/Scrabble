@@ -1,6 +1,6 @@
 use crossterm::terminal::enable_raw_mode;
 // This is the game main file.
-use scrabble::client::{client_work, create_client};
+use scrabble::client::{client_update, create_client};
 
 #[tokio::main]
 async fn main() {
@@ -9,6 +9,7 @@ async fn main() {
     env_logger::init();
 
     let mut c = create_client().await.expect("Failed to create client");
-    client_work(&mut c).await;
+    // client work has a forever loop. 
+    client_update(&mut c).await;
     loop {}
 }
