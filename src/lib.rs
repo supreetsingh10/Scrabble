@@ -2,12 +2,24 @@ pub mod gameserver;
 pub mod client;
 pub mod constants;
 
-
-
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
 use futures::{FutureExt, StreamExt};
 use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+pub struct Coordinate {
+    pub x: u16,
+    pub y: u16
+}
+
+impl Coordinate {
+    pub fn new() -> Self {
+        Coordinate {
+            x: 0,
+            y: 0,
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone, Copy)]
 pub enum MOVEMENT {
@@ -21,7 +33,7 @@ pub enum MOVEMENT {
 pub enum Action {
     DIRECTION(MOVEMENT),
     QUIT,
-    WRITE,
+    WRITE(char),
     NONE,
 }
 
@@ -59,6 +71,24 @@ impl ClientEvent
 
     pub fn from_key(keyp: &KeyEvent) -> Self {
         log::debug!("Key pressed {:?}", keyp);
+
+        for ch in b'a'..=b'z' {
+            if KeyCode::Char(ch as char) == keyp.code {
+                return ClientEvent {
+                    action: Action::WRITE(ch as char),
+                };
+            }
+        }
+
+        for ch in b'A'..=b'Z' {
+            if KeyCode::Char(ch as char) == keyp.code {
+                return ClientEvent {
+                    action: Action::WRITE(ch as char),
+                };
+            }
+        }
+
+
         match keyp {
             KeyEvent { code: KeyCode::Up, modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE} => ClientEvent {
                 action: Action::DIRECTION(MOVEMENT::UP),
