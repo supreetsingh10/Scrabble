@@ -23,12 +23,11 @@ pub async fn client_update(client: &mut TcpStream) {
             }
 
             let val = serde_json::to_string(&ce).expect("Failed to serialize");
-            debug!("{}", val);
             let _ = client.write_all(val.trim().as_bytes()).await;
+            server_response(client).await;
         }
 
         // this is where the client will process the server response and render the changes. 
-        server_response(client).await;
         let _ = client.flush().await;
     }
 }
