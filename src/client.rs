@@ -6,6 +6,7 @@ use crate::{Action, ClientEvent, KeyPress, KeyboardEvent};
 use log::debug;
 use tokio::io::AsyncReadExt;
 use tokio::{io::AsyncWriteExt, net::TcpStream};
+use crate::Response;
 
 // create a client and bind to the given port.
 pub async fn create_client() -> std::io::Result<TcpStream> {
@@ -24,7 +25,9 @@ pub async fn client_update(client: &mut TcpStream) {
 
             let val = serde_json::to_string(&ce).expect("Failed to serialize");
             let _ = client.write_all(val.trim().as_bytes()).await;
-            server_response(client).await;
+            let _ = server_response(client).await;
+            // render;
+            // here the board will be updated and the changes will be rendered.
         }
 
         // this is where the client will process the server response and render the changes. 
@@ -32,7 +35,7 @@ pub async fn client_update(client: &mut TcpStream) {
     }
 }
 
-async fn server_response(stream: &mut TcpStream) {
+async fn server_response(stream: &mut TcpStream) -> Result<Response, serde_json::Error> {
     let mut buffer = [0u8; 2048];
     let mut buf_cursor = 0;
 
@@ -55,6 +58,9 @@ async fn server_response(stream: &mut TcpStream) {
     }
 
     println!("{}", String::from_utf8_lossy(buffer[0..buf_cursor].as_ref()));
+
+    serde_json::from_slice(&buffer)
+
 }
 
 // the read function has to be made async.
