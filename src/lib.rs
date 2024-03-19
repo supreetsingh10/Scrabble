@@ -6,10 +6,20 @@ use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifi
 use futures::{FutureExt, StreamExt};
 use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize, Debug)]
+// sending the coordinate. 
+pub struct Response {
+    // this box coordinate will be used to highglight the box and as well as will be used to write
+    // the values to it. 
+   pub box_coordinate: Option<Coordinate>,
+   pub write_char: Option<char>,
+   pub win_score: Option<u32>
+}
+
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct Coordinate {
-    pub x: u16,
-    pub y: u16
+    pub x: u32,
+    pub y: u32,
 }
 
 impl Coordinate {
@@ -26,7 +36,7 @@ pub enum MOVEMENT {
     UP, 
     DOWN,
     RIGHT,
-    LEFT
+    LEFT,
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone, Copy)]

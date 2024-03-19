@@ -1,6 +1,9 @@
 use std::char;
 
+use crate::Coordinate;
+
 #[derive(Copy, Clone, Debug)]
+#[allow(dead_code)]
 pub struct ScrabTile {
     point: u16,
     letter: char,
@@ -19,6 +22,8 @@ pub trait Grids {
     type Output;
 
     fn new() -> Box<Self::Output>;
+
+    fn update_grid(cur_coords: &Coordinate, input: char); 
 }
 
 impl Grids for Grid {
@@ -26,6 +31,11 @@ impl Grids for Grid {
 
     fn new() -> Box<Grid> {
        Box::new([[ScrabTile::default(); 15]; 15]) 
+    }
+
+    fn update_grid(cur_coord: &Coordinate, input: char) {
+        // self[coord.x as usize][coord.y as usize].letter = input;
+
     }
 }
 

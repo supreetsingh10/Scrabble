@@ -1,6 +1,8 @@
+use core::panic;
 use std::borrow::BorrowMut;
 
-use crate::{Coordinate, gameserver::{players::PLAYER, board::Grid}, Action, ClientEvent};
+use crate::{gameserver::{board::Grid, players::PLAYER}, Action, ClientEvent, Coordinate, Response};
+
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
@@ -23,6 +25,16 @@ impl BoardState {
 
     pub fn get_current_coord(&self) -> &Coordinate {
         &self.current_coord
+    }
+
+    pub fn update_scrab_grid(&mut self, resp: &Response) {
+        // board state will have updated values. use those values to update the characters. 
+        match self.scrab_grid {
+            Some(mut g) => {
+                // if response has been updated with a character. 
+            },
+            None => panic!("Check why the grid is None"),
+        }
     }
 
     pub fn get_current_coord_mut(&mut self) -> &mut Coordinate {

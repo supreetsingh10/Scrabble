@@ -1,13 +1,12 @@
 // This is the server main file.
 use log::debug;
-use scrabble::{constants::global::PORT, gameserver::{board::{Grid, Grids}, gamestate::BoardState}, Action, ClientEvent, Coordinate, MOVEMENT};
+use scrabble::{constants::global::PORT, gameserver::{board::{Grid, Grids}, gamestate::BoardState}, Action, Response, ClientEvent, Coordinate, MOVEMENT};
 use std::net::SocketAddr;
 use std::process::exit;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
 };
-use serde::{Serialize, Deserialize};
 
 type Connection = (TcpStream, SocketAddr);
 #[tokio::main]
@@ -22,6 +21,7 @@ async fn main() {
 
     let mut board_state = BoardState::initialize();
     
+    // need to update the scrab board for the wins as well. 
     let scrab_board = Grid::new();
 
     board_state.set_scrab_grid(*scrab_board);
@@ -47,38 +47,32 @@ async fn main() {
     loop {}
 }
 
-
-#[derive(Serialize, Deserialize, Debug)]
-// sending the coordinate. 
-struct Response {
-    // this box coordinate will be used to highglight the box and as well as will be used to write
-    // the values to it. 
-    box_coordinate: Option<Coordinate>,
-    write_char: Option<char>,
-}
-
 // the current coordinates will be changed here. 
 fn handle_movement(mov: MOVEMENT, cur_coords: &mut Coordinate) -> Response  {
     match mov {
         MOVEMENT::UP => {
-            cur_coords.y -= 1;
+            if cur_coords.y > 0 {
+                cur_coords.y -= 1;
+            }
        }, 
         MOVEMENT::DOWN => {
-            cur_coords.y += 1; 
+            if cur_coords.y < 14 {
+                cur_coords.y += 1; 
+            }
         },
         MOVEMENT::RIGHT => {
-            cur_coords.x += 1;
+            if cur_coords.x < 14 {
+                cur_coords.x += 1;
+            }
         }, 
         MOVEMENT::LEFT => {
-            cur_coords.x -= 1;
+            if cur_coords.x > 0 {
+                cur_coords.x -= 1;
+            }
         }
     }
 
-    Response { box_coordinate: Some(cur_coords.clone()), write_char: (None) }
-}
-
-fn handle_chars() {
-
+    Response { box_coordinate: Some(cur_coords.clone()), write_char: (None), win_score: None }
 }
 
 // this is the place where we have the client event. 
@@ -91,10 +85,11 @@ fn request_handler(board_state: &mut Box<BoardState>) -> Response {
             exit(0);
         },
         Action::WRITE(ch) => {
-            Response {box_coordinate: Some(board_state.get_current_coord().clone()), write_char: Some(ch)}
+            // calculate win here also. 
+            Response {box_coordinate: Some(board_state.get_current_coord().clone()), write_char: Some(ch), win_score: Some(0)}
         }, 
         Action::NONE => {
-            Response {box_coordinate: None, write_char: None}
+            Response {box_coordinate: None, write_char: None, win_score: Some(0)}
         }
     }
 }
@@ -134,7 +129,9 @@ async fn handle_connection(con: &mut Connection, board_state: &mut Box<BoardStat
         let resp = request_handler(board_state);
         debug!("Board state value {:?}", board_state.get_current_coord().clone());
         stream.flush().await.unwrap();
-        stream.write_all(resp.response.as_bytes()).await.unwrap();
+
+        let trans = serde_json::to_string(&resp).unwrap();
+        stream.write_all(trans.as_bytes()).await.unwrap();
         // board will be updated on the background
     }
 
