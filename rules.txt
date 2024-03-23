@@ -1,0 +1,5 @@
+Who goes first is decided by 
+1. The players draw the tiles and who ever is closes to A goes first. 
+2. If someone draws a blank tile, they go first automatically. 
+3. Each player draws 7 tiles. 
+4. No abbreviations are allowed. 

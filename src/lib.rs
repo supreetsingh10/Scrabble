@@ -1,6 +1,7 @@
 pub mod gameserver; 
 pub mod client;
 pub mod constants;
+pub mod players;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
 use futures::{FutureExt, StreamExt};
@@ -12,6 +13,7 @@ pub struct Response {
     // this box coordinate will be used to highglight the box and as well as will be used to write
     // the values to it. 
    pub box_coordinate: Option<Coordinate>,
+   // if None is recieved that means the letter typed does not exist for the given player. 
    pub write_char: Option<char>,
    pub win_score: Option<u32>
 }
@@ -44,15 +46,23 @@ pub enum Action {
     DIRECTION(MOVEMENT),
     QUIT,
     WRITE(char),
+    WAITING,
     NONE,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum KeyPress {
     Key(crossterm::event::KeyEvent),
-    Error, 
-    Tick,
+    ERROR, 
+    NONE,
+    TICK,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum PLAYER {
+    Player1,
+    Player2,
+}
 
 // Now this will be our stream source. 
 pub struct KeyboardEvent {
@@ -71,14 +81,16 @@ pub struct ClientEvent {
     pub action: Action,
 }
 
-impl ClientEvent 
-{
-    pub fn default() -> Self {
+impl Default for ClientEvent {
+    fn default() -> Self {
         ClientEvent {
             action: Action::NONE,
         }
     }
+}
 
+impl ClientEvent 
+{
     pub fn from_key(keyp: &KeyEvent) -> Self {
         log::debug!("Key pressed {:?}", keyp);
 
@@ -125,13 +137,14 @@ impl KeyboardEvent {
     // So this will be creating an unbounded channel, the source will be the crossterm
     // keypresses, the reciever will be the place where this is called. 
     // Example: The update function in the game program. 
+    // the event handler has to be redone. We do not need async eventstream. 
     pub fn new() -> Self {
         let (ltx, lrx) = tokio::sync::mpsc::unbounded_channel::<KeyPress>();
 
-        let t_rate = Duration::from_millis(250);
+        let t_rate = Duration::from_millis(10);
         let _tx: tokio::sync::mpsc::UnboundedSender<KeyPress> = ltx.clone(); 
 
-        let _ = tokio::spawn(async move{
+        let eve_thread = tokio::spawn(async move {
             let mut reader = crossterm::event::EventStream::new(); 
             let mut inter = tokio::time::interval(t_rate);
 
@@ -148,34 +161,42 @@ impl KeyboardEvent {
                                     crossterm::event::Event::Key(key) => {
                                         if key.kind == crossterm::event::KeyEventKind::Press {
                                             // process the key here. 
-                                            ltx.send(KeyPress::Key(key)).unwrap();
+                                            println!("key pressed {:?}", &key);
+                                            match ltx.send(KeyPress::Key(key)) {
+                                                Ok(()) => log::info!("Sending successful"),
+                                                Err(e) => log::error!("Sending failed {}", e),
+                                            }
                                         }
                                     }
                                     _ => {
-
+                                        match ltx.send(KeyPress::NONE) {
+                                            Ok(()) => log::info!("Some other random event occured successful"),
+                                            Err(e) => log::error!("Random failed {}", e),
+                                        }
+                                        // for all the other crossterm events. 
                                     }
                                 }
                             },
                             Some(Err(_)) => {
-                                ltx.send(KeyPress::Error).unwrap();
-
+                                log::error!("Error came");
+                                ltx.send(KeyPress::ERROR).unwrap();
                             }
                             None => {
-
                             }
                         }
                     }, 
                     _ = delay => {
-                        // panic here for some reason. 
-                        // maybe because I was pushing this too quick . 
-                        // understand the select macro a bit better. 
-                        ltx.send(KeyPress::Tick).unwrap();
+                        // do not send tick as it is not required. 
+                        match ltx.send(KeyPress::TICK) {
+                            Ok(()) => log::info!("Ticking successful"),
+                            Err(e) => log::error!("Ticking failed {}", e),
+                        }
                     },
                 }
             }
         });
 
-        KeyboardEvent{_tx,rx: lrx /*, task: Some(task)*/}
+        KeyboardEvent{_tx, rx: lrx }
     }
 
     pub async fn next(&mut self) -> Option<KeyPress> {
