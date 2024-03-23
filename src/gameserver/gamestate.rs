@@ -1,7 +1,5 @@
-use core::panic;
 use std::borrow::BorrowMut;
-
-use crate::{gameserver::{board::Grid, players::PLAYER}, Action, ClientEvent, Coordinate, Response};
+use crate::{gameserver::board::Grid, PLAYER, Action, ClientEvent, Coordinate, Response};
 
 
 #[allow(dead_code)]
@@ -13,13 +11,14 @@ pub struct BoardState {
     scrab_grid: Option<Grid>,
 }
 
+// Who ever makes the server will be the player one. 
 impl BoardState {
     fn new() -> Self {
         BoardState { 
             current_coord: Coordinate::new(),
             player_turn: PLAYER::Player1, 
             client_event: None, 
-            scrab_grid: None
+            scrab_grid: None,
         }
     }
 
@@ -58,7 +57,7 @@ impl BoardState {
     }
 
     pub fn get_scrab_grid(&self) -> Option<Grid> {
-        self.scrab_grid.clone()
+        self.scrab_grid
     }
 
     pub fn get_action(&self) -> Action {

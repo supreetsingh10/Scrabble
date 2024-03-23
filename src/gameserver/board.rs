@@ -17,13 +17,13 @@ impl ScrabTile {
 
 
 pub type Grid = [[ScrabTile; 15]; 15];
+pub type PlayerTile = ScrabTile; 
+pub type SackTiles;
 
 pub trait Grids {
     type Output;
 
     fn new() -> Box<Self::Output>;
-
-    fn update_grid(cur_coords: &Coordinate, input: char); 
 }
 
 impl Grids for Grid {
@@ -32,10 +32,11 @@ impl Grids for Grid {
     fn new() -> Box<Grid> {
        Box::new([[ScrabTile::default(); 15]; 15]) 
     }
+}
 
-    fn update_grid(cur_coord: &Coordinate, input: char) {
-        // self[coord.x as usize][coord.y as usize].letter = input;
+impl Grids for SackTiles {
+    type Output = SackTiles;
+    fn new() -> Box<SackTiles> {
 
     }
 }
-
