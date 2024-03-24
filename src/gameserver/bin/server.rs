@@ -1,6 +1,7 @@
 // This is the server main file.
 use log::{debug, info};
-use scrabble::{constants::global::PORT, gameserver::{board::{Grid, Grids}, gamestate::BoardState}, Action, Response, ClientEvent, Coordinate, MOVEMENT};
+use scrabble::{constants::global::PORT, gameserver::{board::{Grid, Grids, Sack, SackTiles}, gamestate::BoardState}, Action, ClientEvent, Coordinate, Response, MOVEMENT
+};
 use std::net::SocketAddr;
 use std::process::exit;
 use tokio::{
@@ -23,6 +24,10 @@ async fn main() {
     // when the players connect for the first time then the values from the sack will be given to
     // them
 
+    let mut sack: SackTiles = Sack::new_sack(); 
+
+    sack.shuffle_sack(); 
+    debug!("{:?}", sack); 
     let mut board_state = BoardState::initialize();
     
     // need to update the scrab board for the wins as well. 

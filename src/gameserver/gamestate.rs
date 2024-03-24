@@ -2,7 +2,6 @@ use std::borrow::BorrowMut;
 use crate::{gameserver::board::Grid, PLAYER, Action, ClientEvent, Coordinate, Response};
 
 
-#[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
 pub struct BoardState {
     current_coord: Coordinate, 
