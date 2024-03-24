@@ -3,7 +3,6 @@ use std::process::exit;
 
 use crate::constants::global::{DEBUG_LEVEL_1, PORT};
 use crate::{Action, ClientEvent, KeyPress, KeyboardEvent};
-// use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use log::{debug, info};
 use tokio::io::AsyncReadExt;
 use tokio::{io::AsyncWriteExt, net::TcpStream};
@@ -41,12 +40,6 @@ pub async fn client_update(client: &mut TcpStream) {
 
         // if player sack is empty then fill it up with values.
         match c_event.action {
-            Action::NONE => {
-
-            },
-            Action::WAITING => {
-
-            },
             Action::QUIT => {
                 let val = serde_json::to_string(&c_event).expect("Failed to serialize");
                 if let Err(e) = client.write_all(val.trim().as_bytes()).await {
@@ -55,6 +48,8 @@ pub async fn client_update(client: &mut TcpStream) {
                 exit(0);
             },
             Action::WRITE(w) => {
+                //TODO
+                // Delete the character w from the player sack. 
                 let val = serde_json::to_string(&c_event).expect("Failed to serialize");
 
                 if let Err(e) = client.write_all(val.trim().as_bytes()).await {
@@ -65,9 +60,25 @@ pub async fn client_update(client: &mut TcpStream) {
                     Ok(r) => r,
                     Err(e) => panic!("Error occured {}", e),
                 };
+
+                // Update the score on the client. 
             },
             Action::DIRECTION(m) => {
+                let dir = serde_json::to_string(&c_event).expect("Failed to serialize the direction"); 
 
+                if let Err(e) = client.write_all(dir.trim().as_bytes()).await {
+                    panic!("Failed to write the movement stream, Error : {}", e); 
+                }
+
+                let resp = match server_response(client).await {
+                    Ok(r) => r,
+                    Err(e) => panic!("Server response fn call failed, Error {}", e),
+                };
+
+                // update the current visuals on the screen related to movement of the cursor. 
+            }
+            _ => {
+                // None and waiting are left, they do nothing for now. Hence do not change it. 
             }
         };
 
@@ -92,6 +103,6 @@ async fn server_response(stream: &mut TcpStream) -> Result<Response, serde_json:
 
     println!("Server respone. {}", String::from_utf8_lossy(buffer[0..buf_cursor].as_ref()));
 
-    serde_json::from_slice(&buffer)
+    serde_json::from_slice(&buffer[0..buf_cursor])
 }
 
