@@ -1,4 +1,4 @@
-use crate::PLAYER; 
+use crate::PLAYER;
 
 #[allow(dead_code)]
 pub struct Player {
@@ -9,17 +9,17 @@ pub struct Player {
 }
 
 impl Player {
-    // Instantiates a new player. 
-    // The pool of letter sack will handled by the server and the current 
-    // player sack will be updated after every turn. 
-    // The number of characters in the sack will be 7. 
-    // I can use an array instead and I will keep updating the letters. 
+    // Instantiates a new player.
+    // The pool of letter sack will handled by the server and the current
+    // player sack will be updated after every turn.
+    // The number of characters in the sack will be 7.
+    // I can use an array instead and I will keep updating the letters.
     pub fn new(p: PLAYER, l_s: [char; 7]) -> Self {
-        Player { 
-            player_num: p, 
+        Player {
+            player_num: p,
             total_score: 0,
             in_turn: false,
-            letter_sack: l_s 
+            letter_sack: l_s,
         }
     }
 }

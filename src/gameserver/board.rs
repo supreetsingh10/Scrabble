@@ -1,5 +1,5 @@
+use rand::prelude::*;
 use std::char;
-use rand::prelude::*; 
 
 #[derive(Copy, Clone, Debug)]
 pub struct ScrabTile {
@@ -9,11 +9,17 @@ pub struct ScrabTile {
 
 impl ScrabTile {
     pub fn default() -> Self {
-        ScrabTile { point: 0, letter: ' ' }
+        ScrabTile {
+            point: 0,
+            letter: ' ',
+        }
     }
 
     pub fn new(l: char, p: u16) -> Self {
-        ScrabTile {point: p, letter: l}
+        ScrabTile {
+            point: p,
+            letter: l,
+        }
     }
 }
 
@@ -26,7 +32,7 @@ pub trait Grids {
 
 impl Grids for Grid {
     fn new() -> Box<Grid> {
-       Box::new([[ScrabTile::default(); 15]; 15]) 
+        Box::new([[ScrabTile::default(); 15]; 15])
     }
 }
 
@@ -35,9 +41,8 @@ pub trait Sack {
 
     fn shuffle_sack(&mut self);
 
-    fn populate(&mut self, num: u16,  ch: char, point: u16); 
+    fn populate(&mut self, num: u16, ch: char, point: u16);
 }
-
 
 //1 point: E ×12, A ×9, I ×9, O ×8, N ×6, R ×6, T ×6, L ×4, S ×4, U ×4
 //2 points: D ×4, G ×3
@@ -49,33 +54,32 @@ pub trait Sack {
 impl Sack for SackTiles {
     fn new_sack() -> SackTiles {
         let mut sack = SackTiles::new();
-        sack.populate(12,'e', 1);
-        sack.populate(9, 'a', 1); 
-        sack.populate(9, 'i', 1); 
-        sack.populate(8, 'o', 1); 
-        sack.populate(6, 'n', 1); 
-        sack.populate(6, 'r', 1); 
-        sack.populate(6, 't', 1); 
-        sack.populate(4, 'l', 1); 
-        sack.populate(4, 's', 1); 
-        sack.populate(4, 'u', 1); 
+        sack.populate(12, 'e', 1);
+        sack.populate(9, 'a', 1);
+        sack.populate(9, 'i', 1);
+        sack.populate(8, 'o', 1);
+        sack.populate(6, 'n', 1);
+        sack.populate(6, 'r', 1);
+        sack.populate(6, 't', 1);
+        sack.populate(4, 'l', 1);
+        sack.populate(4, 's', 1);
+        sack.populate(4, 'u', 1);
 
-        sack.populate(4, 'd', 2); 
-        sack.populate(4, 'g', 2); 
+        sack.populate(4, 'd', 2);
+        sack.populate(4, 'g', 2);
 
-        sack.populate(2, 'b', 3); 
-        sack.populate(2, 'c', 3); 
-        sack.populate(2, 'm', 3); 
-        sack.populate(2, 'p', 3); 
+        sack.populate(2, 'b', 3);
+        sack.populate(2, 'c', 3);
+        sack.populate(2, 'm', 3);
+        sack.populate(2, 'p', 3);
 
-        sack.populate(2,'f', 4);
-        sack.populate(2,'h', 4);
-        sack.populate(2,'v', 4);
-        sack.populate(2,'w', 4);
-        sack.populate(2,'y', 4);
+        sack.populate(2, 'f', 4);
+        sack.populate(2, 'h', 4);
+        sack.populate(2, 'v', 4);
+        sack.populate(2, 'w', 4);
+        sack.populate(2, 'y', 4);
 
         sack.populate(1, 'k', 5);
-
 
         sack.populate(1, 'j', 8);
         sack.populate(1, 'x', 8);
@@ -90,17 +94,19 @@ impl Sack for SackTiles {
 
     // Shuffle works like this, we will iterate through the vector
     // generate a random number, switch the positions of the current number and the tile on that
-    // randomly generated index. 
-    // do this till the end of the vector. 
+    // randomly generated index.
+    // do this till the end of the vector.
     fn shuffle_sack(&mut self) {
-        let mut rng = rand::thread_rng(); 
-        self.shuffle(&mut rng); 
+        let mut rng = rand::thread_rng();
+        self.shuffle(&mut rng);
     }
 
     fn populate(&mut self, num: u16, ch: char, point_awared: u16) {
         (0..num).for_each(|_| {
-            self.push(ScrabTile { point: point_awared, letter: ch })
+            self.push(ScrabTile {
+                point: point_awared,
+                letter: ch,
+            })
         })
     }
 }
-

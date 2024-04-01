@@ -1,6 +1,6 @@
-pub mod gameserver; 
 pub mod client;
 pub mod constants;
+pub mod gameserver;
 pub mod players;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
@@ -8,14 +8,15 @@ use futures::{FutureExt, StreamExt};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
-// sending the coordinate. 
+// sending the coordinate.
 pub struct Response {
     // this box coordinate will be used to highglight the box and as well as will be used to write
-    // the values to it. 
-   pub box_coordinate: Option<Coordinate>,
-   // if None is recieved that means the letter typed does not exist for the given player. 
-   pub write_char: Option<char>,
-   pub win_score: Option<u32>
+    // the values to it.
+    pub box_coordinate: Option<Coordinate>,
+    pub player_turn: PLAYER,
+    // if None is recieved that means the letter typed does not exist for the given player.
+    pub write_char: Option<char>,
+    pub win_score: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
@@ -26,16 +27,13 @@ pub struct Coordinate {
 
 impl Coordinate {
     pub fn new() -> Self {
-        Coordinate {
-            x: 0,
-            y: 0,
-        }
+        Coordinate { x: 0, y: 0 }
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone, Copy)]
 pub enum MOVEMENT {
-    UP, 
+    UP,
     DOWN,
     RIGHT,
     LEFT,
@@ -44,6 +42,9 @@ pub enum MOVEMENT {
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone, Copy)]
 pub enum Action {
     DIRECTION(MOVEMENT),
+    // Super will be working as a key that will be ending the game round if it is on, and starting
+    // the game round if it is off. 
+    END,
     QUIT,
     WRITE(char),
     WAITING,
@@ -53,29 +54,27 @@ pub enum Action {
 #[derive(Debug, Clone, Copy)]
 pub enum KeyPress {
     Key(crossterm::event::KeyEvent),
-    ERROR, 
+    ERROR,
     NONE,
     TICK,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum PLAYER {
     Player1,
     Player2,
 }
 
-// Now this will be our stream source. 
+// Now this will be our stream source.
 pub struct KeyboardEvent {
     _tx: tokio::sync::mpsc::UnboundedSender<KeyPress>,
     rx: tokio::sync::mpsc::UnboundedReceiver<KeyPress>,
     // task: Option<tokio::task::JoinHandle<()>>,
 }
 
-
-
 /// TODO
 // This will need elements such as Tile, which will have the information related to the value
-// added. 
+// added.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone, Copy)]
 pub struct ClientEvent {
     pub action: Action,
@@ -89,8 +88,7 @@ impl Default for ClientEvent {
     }
 }
 
-impl ClientEvent 
-{
+impl ClientEvent {
     pub fn from_key(keyp: &KeyEvent) -> Self {
         log::debug!("Key pressed {:?}", keyp);
 
@@ -110,22 +108,54 @@ impl ClientEvent
             }
         }
 
-
         match keyp {
-            KeyEvent { code: KeyCode::Up, modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE} => ClientEvent {
+            KeyEvent {
+                code: KeyCode::Up,
+                modifiers: KeyModifiers::NONE,
+                kind: KeyEventKind::Press,
+                state: KeyEventState::NONE,
+            } => ClientEvent {
                 action: Action::DIRECTION(MOVEMENT::UP),
             },
-            KeyEvent { code: KeyCode::Down, modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE} => ClientEvent {
+            KeyEvent {
+                code: KeyCode::Tab,
+                modifiers: KeyModifiers::NONE,
+                kind: KeyEventKind::Press,
+                state: KeyEventState::NONE,
+            } => ClientEvent { 
+                action: Action::END
+            },
+            KeyEvent {
+                code: KeyCode::Down,
+                modifiers: KeyModifiers::NONE,
+                kind: KeyEventKind::Press,
+                state: KeyEventState::NONE,
+            } => ClientEvent {
                 action: Action::DIRECTION(MOVEMENT::DOWN),
             },
-            KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE} => ClientEvent {
+            KeyEvent {
+                code: KeyCode::Right,
+                modifiers: KeyModifiers::NONE,
+                kind: KeyEventKind::Press,
+                state: KeyEventState::NONE,
+            } => ClientEvent {
                 action: Action::DIRECTION(MOVEMENT::RIGHT),
             },
-            KeyEvent { code: KeyCode::Left, modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE} => ClientEvent {
+            KeyEvent {
+                code: KeyCode::Left,
+                modifiers: KeyModifiers::NONE,
+                kind: KeyEventKind::Press,
+                state: KeyEventState::NONE,
+            } => ClientEvent {
                 action: Action::DIRECTION(MOVEMENT::LEFT),
             },
-            KeyEvent { code: KeyCode::Esc, modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE} => ClientEvent { 
-                action: Action::QUIT 
+            KeyEvent {
+                code: KeyCode::Esc,
+                modifiers: KeyModifiers::NONE,
+                kind: KeyEventKind::Press,
+                state: KeyEventState::NONE,
+            } => ClientEvent {
+                action: Action::QUIT,
             },
             _ => ClientEvent::default(),
         }
@@ -135,24 +165,24 @@ impl ClientEvent
 use std::time::Duration;
 impl KeyboardEvent {
     // So this will be creating an unbounded channel, the source will be the crossterm
-    // keypresses, the reciever will be the place where this is called. 
-    // Example: The update function in the game program. 
-    // the event handler has to be redone. We do not need async eventstream. 
+    // keypresses, the reciever will be the place where this is called.
+    // Example: The update function in the game program.
+    // the event handler has to be redone. We do not need async eventstream.
     pub fn new() -> Self {
         let (ltx, lrx) = tokio::sync::mpsc::unbounded_channel::<KeyPress>();
 
         let t_rate = Duration::from_millis(10);
-        let _tx: tokio::sync::mpsc::UnboundedSender<KeyPress> = ltx.clone(); 
+        let _tx: tokio::sync::mpsc::UnboundedSender<KeyPress> = ltx.clone();
 
         let eve_thread = tokio::spawn(async move {
-            let mut reader = crossterm::event::EventStream::new(); 
+            let mut reader = crossterm::event::EventStream::new();
             let mut inter = tokio::time::interval(t_rate);
 
             loop {
                 let delay = inter.tick();
-                let crossterm_event = reader.next().fuse(); 
+                let crossterm_event = reader.next().fuse();
 
-                // select uses both the async functions. 
+                // select uses both the async functions.
                 tokio::select! {
                     maybe_event = crossterm_event => {
                         match maybe_event {
@@ -160,7 +190,7 @@ impl KeyboardEvent {
                                 match evt {
                                     crossterm::event::Event::Key(key) => {
                                         if key.kind == crossterm::event::KeyEventKind::Press {
-                                            // process the key here. 
+                                            // process the key here.
                                             println!("key pressed {:?}", &key);
                                             match ltx.send(KeyPress::Key(key)) {
                                                 Ok(()) => log::info!("Sending successful"),
@@ -173,7 +203,7 @@ impl KeyboardEvent {
                                             Ok(()) => log::info!("Some other random event occured successful"),
                                             Err(e) => log::error!("Random failed {}", e),
                                         }
-                                        // for all the other crossterm events. 
+                                        // for all the other crossterm events.
                                     }
                                 }
                             },
@@ -184,9 +214,9 @@ impl KeyboardEvent {
                             None => {
                             }
                         }
-                    }, 
+                    },
                     _ = delay => {
-                        // do not send tick as it is not required. 
+                        // do not send tick as it is not required.
                         match ltx.send(KeyPress::TICK) {
                             Ok(()) => log::info!("Ticking successful"),
                             Err(e) => log::error!("Ticking failed {}", e),
@@ -196,11 +226,10 @@ impl KeyboardEvent {
             }
         });
 
-        KeyboardEvent{_tx, rx: lrx }
+        KeyboardEvent { _tx, rx: lrx }
     }
 
     pub async fn next(&mut self) -> Option<KeyPress> {
         self.rx.recv().await
     }
 }
-

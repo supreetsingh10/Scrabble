@@ -1,23 +1,33 @@
+use crate::{gameserver::board::Grid, Action, ClientEvent, Coordinate, Response, PLAYER};
 use std::borrow::BorrowMut;
-use crate::{gameserver::board::Grid, PLAYER, Action, ClientEvent, Coordinate, Response};
+use tokio::sync::Mutex;
+use std::sync::Arc;
 
+use super::{board::SackTiles, server_player::ServerPlayer};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct BoardState {
-    current_coord: Coordinate, 
+    current_coord: Coordinate,
+    // Player enum is client facing. 
+    // I need a player struct for the server as well which will take care of the sack, the
+    // characters the player uses. 
     player_turn: PLAYER,
     client_event: Option<ClientEvent>,
-    scrab_grid: Option<Grid>,
+    scrab_sack: Arc<Mutex<Option<SackTiles>>>,
+    scrab_grid: Arc<Mutex<Option<Grid>>>,
+    players: Arc<Mutex<Vec<ServerPlayer>>>,
 }
 
-// Who ever makes the server will be the player one. 
+// Who ever makes the server will be the player one.
 impl BoardState {
     fn new() -> Self {
-        BoardState { 
+        BoardState {
             current_coord: Coordinate::new(),
-            player_turn: PLAYER::Player1, 
-            client_event: None, 
-            scrab_grid: None,
+            player_turn: PLAYER::Player1,
+            client_event: None,
+            scrab_sack: Arc::new(Mutex::new(None)),
+            scrab_grid: Arc::new(Mutex::new(None)),
+            players: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
@@ -26,13 +36,18 @@ impl BoardState {
     }
 
     pub fn update_scrab_grid(&mut self, resp: &Response) {
-        // board state will have updated values. use those values to update the characters. 
-        match self.scrab_grid {
-            Some(mut g) => {
-                // if response has been updated with a character. 
-            },
-            None => panic!("Check why the grid is None"),
-        }
+        // board state will have updated values. use those values to update the characters.
+    }
+
+    pub async fn add_player(&self, player: ServerPlayer) {
+        let mut l = self.players.lock().await;
+        l.push(player);
+    }
+
+    pub async fn describe_players(&self) {
+        self.players.lock().await.iter().for_each(|f| {
+            f.describe_player(); 
+        });
     }
 
     pub fn get_current_coord_mut(&mut self) -> &mut Coordinate {
@@ -51,25 +66,20 @@ impl BoardState {
         Box::new(BoardState::new())
     }
 
-    pub fn set_scrab_grid(&mut self, grid:Grid) {
-        self.scrab_grid = Some(grid);
-    }
-
-    pub fn get_scrab_grid(&self) -> Option<Grid> {
-        self.scrab_grid
+    pub async fn set_scrab_grid(&self, grid: Grid) {
+        *self.scrab_grid.lock().await = Some(grid);
     }
 
     pub fn get_action(&self) -> Action {
         match &self.client_event {
             Some(c_event) => {
-                // Here we will get the action 
+                // Here we will get the action
                 c_event.action.to_owned()
-            }, 
+            }
             None => {
-                // Return none if No action. 
+                // Return none if No action.
                 Action::NONE
             }
         }
     }
-
 }
