@@ -38,11 +38,15 @@ async fn main() {
     let scrab_board = Grid::new();
 
     board_state.set_scrab_grid(*scrab_board).await;
+    // scrab_sack will have all the 100 elements. 
+    // We will be poping the elements from the scrab_sack and giving it to the player. 
+    board_state.set_scrab_sack(sack);
 
     let _serve_thread = tokio::spawn(async move {
         match listener.accept().await {
             Ok(mut connection) => {
                 board_state.add_player(ServerPlayer::new()).await;
+
                 debug!("Accepted connection {:?}", connection);
                 tokio::spawn(async move {
                     loop {

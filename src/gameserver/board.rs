@@ -3,8 +3,8 @@ use std::char;
 
 #[derive(Copy, Clone, Debug)]
 pub struct ScrabTile {
-    point: u16,
-    letter: char,
+    pub point: u16,
+    pub letter: char,
 }
 
 impl ScrabTile {
@@ -36,12 +36,11 @@ impl Grids for Grid {
     }
 }
 
-pub trait Sack {
+pub trait Sack<T> {
     fn new_sack() -> Self;
-
     fn shuffle_sack(&mut self);
-
     fn populate(&mut self, num: u16, ch: char, point: u16);
+    fn get_tile(&self) -> T; 
 }
 
 //1 point: E ×12, A ×9, I ×9, O ×8, N ×6, R ×6, T ×6, L ×4, S ×4, U ×4
@@ -51,7 +50,7 @@ pub trait Sack {
 //5 points: K ×1
 //8 points: J ×1, X ×1
 //10 points: Q ×1, Z ×1
-impl Sack for SackTiles {
+impl Sack<ScrabTile> for SackTiles {
     fn new_sack() -> SackTiles {
         let mut sack = SackTiles::new();
         sack.populate(12, 'e', 1);
@@ -92,6 +91,9 @@ impl Sack for SackTiles {
         sack
     }
 
+    fn get_tile(&self) -> Option<ScrabTile> {
+        self.pop().to_owned()
+    }
     // Shuffle works like this, we will iterate through the vector
     // generate a random number, switch the positions of the current number and the tile on that
     // randomly generated index.

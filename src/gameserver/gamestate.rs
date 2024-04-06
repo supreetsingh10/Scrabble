@@ -31,8 +31,16 @@ impl BoardState {
         }
     }
 
+    pub fn initialize() -> Box<BoardState> {
+        Box::new(BoardState::new())
+    }
+
     pub fn get_current_coord(&self) -> &Coordinate {
         &self.current_coord
+    }
+
+    pub async fn set_scrab_sack(&self, sack: SackTiles) {
+        *self.scrab_sack.lock().await = Some(sack);
     }
 
     pub fn update_scrab_grid(&mut self, resp: &Response) {
@@ -60,10 +68,6 @@ impl BoardState {
 
     pub fn get_client_event(&self) -> Option<ClientEvent> {
         self.client_event
-    }
-
-    pub fn initialize() -> Box<BoardState> {
-        Box::new(BoardState::new())
     }
 
     pub async fn set_scrab_grid(&self, grid: Grid) {
