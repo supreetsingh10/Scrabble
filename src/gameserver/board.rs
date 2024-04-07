@@ -40,7 +40,7 @@ pub trait Sack<T> {
     fn new_sack() -> Self;
     fn shuffle_sack(&mut self);
     fn populate(&mut self, num: u16, ch: char, point: u16);
-    fn get_tile(&self) -> T; 
+    fn get_tile(&mut self) -> Option<T>;
 }
 
 //1 point: E ×12, A ×9, I ×9, O ×8, N ×6, R ×6, T ×6, L ×4, S ×4, U ×4
@@ -91,9 +91,10 @@ impl Sack<ScrabTile> for SackTiles {
         sack
     }
 
-    fn get_tile(&self) -> Option<ScrabTile> {
-        self.pop().to_owned()
+    fn get_tile(&mut self) -> Option<ScrabTile> {
+        self.pop()
     }
+
     // Shuffle works like this, we will iterate through the vector
     // generate a random number, switch the positions of the current number and the tile on that
     // randomly generated index.
