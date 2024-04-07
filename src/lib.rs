@@ -7,13 +7,14 @@ use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifi
 use futures::{FutureExt, StreamExt};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+type PlayerNo = u32;
 // sending the coordinate.
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Response {
     // this box coordinate will be used to highglight the box and as well as will be used to write
     // the values to it.
     pub box_coordinate: Option<Coordinate>,
-    pub player_turn: PLAYER,
+    pub player_turn: PlayerNo,
     // if None is recieved that means the letter typed does not exist for the given player.
     pub write_char: Option<char>,
     pub win_score: Option<u32>,
@@ -43,7 +44,7 @@ pub enum MOVEMENT {
 pub enum Action {
     DIRECTION(MOVEMENT),
     // Super will be working as a key that will be ending the game round if it is on, and starting
-    // the game round if it is off. 
+    // the game round if it is off.
     END,
     QUIT,
     WRITE(char),
@@ -57,12 +58,6 @@ pub enum KeyPress {
     ERROR,
     NONE,
     TICK,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub enum PLAYER {
-    Player1,
-    Player2,
 }
 
 // Now this will be our stream source.
@@ -90,7 +85,7 @@ impl Default for ClientEvent {
 
 impl ClientEvent {
     pub fn from_key(keyp: &KeyEvent) -> Self {
-        log::debug!("Key pressed {:?}", keyp);
+        //log::debug!("Key pressed {:?}", keyp);
 
         for ch in b'a'..=b'z' {
             if KeyCode::Char(ch as char) == keyp.code {
@@ -122,8 +117,8 @@ impl ClientEvent {
                 modifiers: KeyModifiers::NONE,
                 kind: KeyEventKind::Press,
                 state: KeyEventState::NONE,
-            } => ClientEvent { 
-                action: Action::END
+            } => ClientEvent {
+                action: Action::END,
             },
             KeyEvent {
                 code: KeyCode::Down,
@@ -217,9 +212,8 @@ impl KeyboardEvent {
                     },
                     _ = delay => {
                         // do not send tick as it is not required.
-                        match ltx.send(KeyPress::TICK) {
-                            Ok(()) => log::info!("Ticking successful"),
-                            Err(e) => log::error!("Ticking failed {}", e),
+                        if let Err(e) = ltx.send(KeyPress::TICK) {
+                            panic!("failed to tick {}", e);
                         }
                     },
                 }

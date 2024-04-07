@@ -4,7 +4,7 @@ use std::process::exit;
 use crate::constants::global::PORT;
 use crate::Response;
 use crate::{Action, ClientEvent, KeyPress, KeyboardEvent};
-use log::debug;
+use log::{debug, info};
 use tokio::io::AsyncReadExt;
 use tokio::{io::AsyncWriteExt, net::TcpStream};
 
@@ -12,11 +12,12 @@ use tokio::{io::AsyncWriteExt, net::TcpStream};
 pub async fn create_client(ip: Option<&String>) -> std::io::Result<TcpStream> {
     match ip {
         Some(addr) => {
-            let add  = format!(":{}", PORT); 
+            let add = format!(":{}", PORT);
             let w = addr.to_owned();
             TcpStream::connect(w + add.as_str()).await
-        },
+        }
         None => {
+            info!("Connected to local");
             TcpStream::connect(format!("0.0.0.0:{}", PORT)).await
         }
     }
@@ -90,9 +91,10 @@ pub async fn client_update(client: &mut TcpStream) {
                 };
 
                 // update the current visuals on the screen related to movement of the cursor.
-            },
+            }
             Action::END => {
-                let end_round = serde_json::to_string(&c_event).expect("Failed to serialize the end"); 
+                let end_round =
+                    serde_json::to_string(&c_event).expect("Failed to serialize the end");
                 if let Err(e) = client.write_all(end_round.trim().as_bytes()).await {
                     panic!("Failed to end the round, Error : {}", e);
                 }
@@ -102,7 +104,8 @@ pub async fn client_update(client: &mut TcpStream) {
                     Err(e) => panic!("Failed to end the round {}", e),
                 };
 
-                // Update the round and make it available for another player. 
+                log::debug!("{:?}", resp);
+                // Update the round and make it available for another player.
             }
             _ => {
                 // None and waiting are left, they do nothing for now. Hence do not change it.

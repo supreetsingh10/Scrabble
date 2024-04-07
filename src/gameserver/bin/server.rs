@@ -1,16 +1,21 @@
 // This is the server main file.
 use log::{debug, info};
 use scrabble::{
-    constants::global::PORT, gameserver::{
+    constants::global::PORT,
+    gameserver::{
         board::{Grid, Grids, Sack, SackTiles},
-        gamestate::BoardState, server_player::{self, ServerPlayer},
-    }, players::Player, Action, ClientEvent, Coordinate, Response, MOVEMENT
+        gamestate::BoardState,
+        server_player::{self, ServerPlayer},
+    },
+    players::Player,
+    Action, ClientEvent, Coordinate, Response, MOVEMENT,
 };
 use std::net::SocketAddr;
 use std::process::exit;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
+    task::block_in_place,
 };
 
 type Connection = (TcpStream, SocketAddr);
@@ -31,23 +36,26 @@ async fn main() {
     let mut sack: SackTiles = Sack::new_sack();
 
     sack.shuffle_sack();
-    debug!("{:?}", sack);
     let mut board_state = BoardState::initialize();
 
     // need to update the scrab board for the wins as well.
     let scrab_board = Grid::new();
 
     board_state.set_scrab_grid(*scrab_board).await;
-    // scrab_sack will have all the 100 elements. 
-    // We will be poping the elements from the scrab_sack and giving it to the player. 
-    board_state.set_scrab_sack(sack);
+    // scrab_sack will have all the 100 elements.
+    // We will be poping the elements from the scrab_sack and giving it to the player.
+    debug!("Shuffled sack {:?}", sack);
+    board_state.set_scrab_sack(sack).await;
 
     let _serve_thread = tokio::spawn(async move {
         match listener.accept().await {
             Ok(mut connection) => {
-                board_state.add_player(ServerPlayer::new()).await;
-
                 debug!("Accepted connection {:?}", connection);
+                // The problem happens to be here. For some reason the code is stuck in a forever
+                // loop.
+                board_state.add_player(ServerPlayer::new()).await;
+                board_state.describe_players().await;
+
                 tokio::spawn(async move {
                     loop {
                         // now the board state will be sufficient to interact with the client
@@ -93,41 +101,52 @@ fn handle_movement(mov: MOVEMENT, cur_coords: &mut Coordinate) -> Response {
         }
     }
 
+    // TODO
+    // The player turn has to be implemented, currently we are working with player1 only.
     Response {
-        player_turn: scrabble::PLAYER::Player1,
+        player_turn: 0,
         box_coordinate: Some(*cur_coords),
         write_char: (None),
         win_score: None,
     }
 }
 
+async fn handle_write(board_state: &mut Box<BoardState>, ch: char) -> Response {
+    
+}
+
+async fn handle_turns(board_state: &mut Box<BoardState>) -> Response {
+    // return the player number as well.
+    board_state.set_next_turn().await;
+    // Total score has to be calculated at this point.
+    Response {
+        box_coordinate: Some(*board_state.get_current_coord()),
+        player_turn: (board_state.get_current_turn().await),
+        write_char: None,
+        win_score: Some(0),
+    }
+}
+
 // this is the place where we have the client event.
 async fn request_handler(board_state: &mut Box<BoardState>) -> Response {
     match board_state.get_action() {
-        Action::DIRECTION(mov) => 
-            handle_movement(mov, board_state.get_current_coord_mut()), Action::QUIT => {
+        Action::DIRECTION(mov) => handle_movement(mov, board_state.get_current_coord_mut()),
+        Action::QUIT => {
             exit(0);
         }
         Action::WRITE(ch) => {
             // check if the player can actually write the specific values.
             Response {
-                player_turn: scrabble::PLAYER::Player1,
+                player_turn: 0,
                 box_coordinate: Some(*board_state.get_current_coord()),
                 write_char: Some(ch),
                 win_score: Some(0),
             }
         }
-        Action::END => {
-            Response {
-                player_turn: scrabble::PLAYER::Player1,
-                box_coordinate: Some(*board_state.get_current_coord()),
-                write_char: None,
-                win_score: Some(0),
-            }
-
-        },
+        // handle the turn here.
+        Action::END => handle_turns(board_state).await,
         _ => Response {
-            player_turn: scrabble::PLAYER::Player1,
+            player_turn: 0,
             box_coordinate: None,
             write_char: None,
             win_score: None,
@@ -139,20 +158,13 @@ async fn request_handler(board_state: &mut Box<BoardState>) -> Response {
 // crashes.
 async fn handle_connection(con: &mut Connection, board_state: &mut Box<BoardState>) {
     info!("Handling the connection");
-    // board_state.describe_players().await; 
+    // board_state.describe_players().await;
     let (stream, _) = con;
     let mut buffer = [0u8; 1024];
     let mut buf_cursor = 0;
 
-    let n = stream.read(&mut buffer).await;
-
-    match n {
-        Ok(m) => {
-            log::info!("Successful reading {}", m);
-        }
-        Err(e) => {
-            log::error!("Failed to read {}", e);
-        }
+    if let Err(e) = stream.read(&mut buffer).await {
+        log::error!("Failed to read {}", e);
     }
 
     for (buf_sz, buf_ch) in buffer.iter().enumerate() {
