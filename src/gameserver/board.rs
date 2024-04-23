@@ -1,6 +1,8 @@
 use rand::prelude::*;
 use std::char;
 
+use crate::Coordinate;
+
 #[derive(Copy, Clone, Debug)]
 pub struct ScrabTile {
     pub point: u16,
@@ -28,11 +30,16 @@ pub type SackTiles = Vec<ScrabTile>;
 
 pub trait Grids {
     fn new() -> Box<Self>;
+    fn if_empty(&self, coords: &Coordinate) -> bool; 
 }
 
 impl Grids for Grid {
     fn new() -> Box<Grid> {
         Box::new([[ScrabTile::default(); 15]; 15])
+    }
+
+    fn if_empty(&self, coords: &Coordinate) -> bool {
+        self[coords.x as usize][coords.y as usize].letter == ' '
     }
 }
 

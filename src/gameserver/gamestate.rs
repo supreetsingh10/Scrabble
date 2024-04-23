@@ -1,6 +1,6 @@
 use crate::{gameserver::board::Grid, Action, ClientEvent, Coordinate, PlayerNo, Response};
 use log::debug;
-use std::{borrow::BorrowMut, future::IntoFuture};
+use std::borrow::BorrowMut;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -36,6 +36,10 @@ impl BoardState {
         Box::new(BoardState::new())
     }
 
+    pub fn get_players(&self) -> Arc<Mutex<Vec<ServerPlayer>>> {
+        Arc::clone(&self.players)
+    }
+
     pub fn get_current_coord(&self) -> &Coordinate {
         &self.current_coord
     }
@@ -44,6 +48,7 @@ impl BoardState {
         *self.scrab_sack.lock().await = Some(sack)
     }
 
+    // there is an update scrab_grid thing. 
     pub fn update_scrab_grid(&mut self, resp: &Response) {
         // board state will have updated values. use those values to update the characters.
     }
@@ -57,13 +62,6 @@ impl BoardState {
             let t = v.pop().take();
             player.fill_sack(t.unwrap()).await;
         }
-    }
-
-    pub async fn get_current_player(&self) -> ServerPlayer {
-        let pl = Arc::clone(&self.players).lock().await;
-        let n = self.get_current_turn().await.to_owned();
-        let pl = *pl; 
-        pl[n as usize]
     }
 
     async fn get_total_players(&self) -> usize {

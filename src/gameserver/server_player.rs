@@ -1,5 +1,5 @@
 use super::board::ScrabTile;
-use log::debug;
+use log::{debug, info};
 use std::collections::LinkedList;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -23,9 +23,25 @@ impl ServerPlayer {
         }
     }
 
+
     // the tiles that have to be added.
     pub async fn lacking_tiles(&self) -> u16 {
         (MAX_SACK as u16) - (self.player_sack.lock().await.len() as u16)
+    }
+
+    // TODO how to pop this from the linkedlist. 
+    pub async fn find_tile(&self, ch: char) -> bool {
+        let ac = Arc::clone(&self.player_sack);
+        let mut pop: usize = 0; 
+        for (c, i) in self.player_sack.lock().await.iter().enumerate() {
+            if i.letter == ch {
+                info!("FOUNDDDDD");
+                pop = c; 
+            }
+        }
+
+
+        return true;
     }
 
     // fill sack

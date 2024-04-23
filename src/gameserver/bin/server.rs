@@ -5,7 +5,7 @@ use scrabble::{
     gameserver::{
         board::{Grid, Grids, Sack, SackTiles},
         gamestate::BoardState,
-        server_player::{self, ServerPlayer},
+        server_player::ServerPlayer,
     },
     players::Player,
     Action, ClientEvent, Coordinate, Response, MOVEMENT,
@@ -15,7 +15,6 @@ use std::process::exit;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
-    task::block_in_place,
 };
 
 type Connection = (TcpStream, SocketAddr);
@@ -111,8 +110,20 @@ fn handle_movement(mov: MOVEMENT, cur_coords: &mut Coordinate) -> Response {
     }
 }
 
+// check if the current coordinate scrab_tile is empty or not. 
+// if it is empty and the character is present in the player sack then only send the response. 
 async fn handle_write(board_state: &mut Box<BoardState>, ch: char) -> Response {
-    
+    let c = *board_state.get_current_coord(); 
+    let play = board_state.get_players();
+    let p = &play.lock().await[board_state.get_current_turn().await as usize];
+    p.find_tile(ch).await;
+
+    Response {
+        player_turn: 0,
+        box_coordinate: Some(c),
+        write_char: Some(ch),
+        win_score: Some(100)
+    }
 }
 
 async fn handle_turns(board_state: &mut Box<BoardState>) -> Response {
@@ -136,6 +147,8 @@ async fn request_handler(board_state: &mut Box<BoardState>) -> Response {
         }
         Action::WRITE(ch) => {
             // check if the player can actually write the specific values.
+            // check if anything is written on the grid as well. 
+            handle_write(board_state, ch).await;
             Response {
                 player_turn: 0,
                 box_coordinate: Some(*board_state.get_current_coord()),
