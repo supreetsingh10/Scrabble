@@ -1,9 +1,10 @@
 use rand::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::char;
 
 use crate::Coordinate;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct ScrabTile {
     pub point: u16,
     pub letter: char,

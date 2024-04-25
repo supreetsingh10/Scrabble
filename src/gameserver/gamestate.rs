@@ -4,7 +4,7 @@ use std::borrow::BorrowMut;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use super::{board::SackTiles, server_player::ServerPlayer};
+use super::{board::{Grids, SackTiles}, server_player::ServerPlayer};
 
 #[derive(Debug, Clone)]
 pub struct BoardState {
@@ -65,8 +65,7 @@ impl BoardState {
     }
 
     async fn get_total_players(&self) -> usize {
-        let p = self.players.lock().await;
-        p.len()
+        self.players.lock().await.len()
     }
 
     pub async fn add_player(&self, player: ServerPlayer) {
@@ -97,6 +96,10 @@ impl BoardState {
 
     pub async fn set_scrab_grid(&self, grid: Grid) {
         *self.scrab_grid.lock().await = Some(grid);
+    }
+
+    pub async fn if_empty(&self, coords: &Coordinate) -> bool {
+        self.scrab_grid.lock().await.unwrap().if_empty(coords)
     }
 
     pub async fn get_current_turn(&self) -> PlayerNo {

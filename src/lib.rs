@@ -5,6 +5,7 @@ pub mod players;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
 use futures::{FutureExt, StreamExt};
+use gameserver::board::ScrabTile;
 use serde::{Deserialize, Serialize};
 
 type PlayerNo = u32;
@@ -16,7 +17,7 @@ pub struct Response {
     pub box_coordinate: Option<Coordinate>,
     pub player_turn: PlayerNo,
     // if None is recieved that means the letter typed does not exist for the given player.
-    pub write_char: Option<char>,
+    pub write_char: Option<ScrabTile>,
     pub win_score: Option<u32>,
 }
 
