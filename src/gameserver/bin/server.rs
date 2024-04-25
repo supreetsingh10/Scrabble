@@ -3,7 +3,7 @@ use log::{debug, info};
 use scrabble::{
     constants::global::PORT,
     gameserver::{
-        board::{Grid, Grids, Sack, SackTiles},
+        board::{self, Grid, Grids, Sack, SackTiles},
         gamestate::BoardState,
         server_player::ServerPlayer,
     },
@@ -116,13 +116,25 @@ async fn handle_write(board_state: &mut Box<BoardState>, ch: char) -> Response {
     let c = *board_state.get_current_coord(); 
     let play = board_state.get_players();
     let p = &play.lock().await[board_state.get_current_turn().await as usize];
-    p.find_tile(ch).await;
+    match p.find_tile(ch).await {
+        Some(t) => {
+            Response {
+                player_turn: board_state.get_current_turn().await,
+                box_coordinate: Some(c),
+                write_char: Some(t),
+                win_score: None,
+            }
 
-    Response {
-        player_turn: 0,
-        box_coordinate: Some(c),
-        write_char: Some(ch),
-        win_score: Some(100)
+        },
+        None => {
+            debug!("The value cannot be written");
+            Response {
+                player_turn: board_state.get_current_turn().await,
+                box_coordinate: Some(c),
+                write_char: None,
+                win_score: None,
+            }
+        }
     }
 }
 
@@ -148,13 +160,7 @@ async fn request_handler(board_state: &mut Box<BoardState>) -> Response {
         Action::WRITE(ch) => {
             // check if the player can actually write the specific values.
             // check if anything is written on the grid as well. 
-            handle_write(board_state, ch).await;
-            Response {
-                player_turn: 0,
-                box_coordinate: Some(*board_state.get_current_coord()),
-                write_char: Some(ch),
-                win_score: Some(0),
-            }
+            handle_write(board_state, ch).await
         }
         // handle the turn here.
         Action::END => handle_turns(board_state).await,

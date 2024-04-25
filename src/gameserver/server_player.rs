@@ -14,6 +14,8 @@ pub struct ServerPlayer {
     words: Arc<Mutex<Vec<String>>>,
 }
 
+// the words will be populated in such a way where. 
+
 impl ServerPlayer {
     pub fn new() -> Self {
         ServerPlayer {
@@ -30,18 +32,22 @@ impl ServerPlayer {
     }
 
     // TODO how to pop this from the linkedlist. 
-    pub async fn find_tile(&self, ch: char) -> bool {
-        let ac = Arc::clone(&self.player_sack);
-        let mut pop: usize = 0; 
-        for (c, i) in self.player_sack.lock().await.iter().enumerate() {
-            if i.letter == ch {
-                info!("FOUNDDDDD");
-                pop = c; 
+    pub async fn find_tile(&self, ch: char) -> Option<ScrabTile> {
+        let mut dummy: Option<ScrabTile> = None;
+        let mut cut_index: usize = 0; 
+        for (index, tile) in self.player_sack.lock().await.iter().enumerate() {
+            if tile.letter == ch {
+                dummy = Some(*tile); 
+                cut_index = index;
+                break;
             }
         }
 
+        if dummy.is_some() {
+            return self.player_sack.lock().await.split_off(cut_index).pop_front();
+        }
 
-        return true;
+        None
     }
 
     // fill sack
